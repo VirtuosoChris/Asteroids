@@ -1,0 +1,14 @@
+Asteroids To Do
+
+High Score Table
+Difficulty Scaling with # maps played
+Map Cleared Bonus
+Options -- eg control sensitivity
+fix hitches -- clear dead objects after end of round?
+eject button
+buymenu bugs
+pause bug with UFO firing
+non-moving/invisible asteroid bugs
+show round
+running statistics
+vector randomization
