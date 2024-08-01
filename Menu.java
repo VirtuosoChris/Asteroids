@@ -29,9 +29,9 @@ public static final String tractorinfos = "Loot drops will move in the direction
 
 
 public static final String quittext = "\n"+
-"Thank you for playing Asteroid Scavenger by Chris Pugh.  "+
-"This game is a work in progress and there are many features I still plan to add or improve.  "+
-"If you have any comments or suggestions, you can send them to me at ChrisPugh666@gmail.com";
+"Thank you for playing Asteroid Scavenger by Chris Pugh.\n"+
+"This game was a side project in my freshman year of college circa 2007.\n"+
+"It was originally a Java Applet and has been modified to fit your screen.";
 
 public boolean ready = false; //is the menu finished so the game can continue?
 
