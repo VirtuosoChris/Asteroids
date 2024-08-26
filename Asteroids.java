@@ -1,27 +1,36 @@
 //central project class, handles game loop, input, applet functions, etc
 
 import java.util.*;
+
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 import java.awt.*;
 import java.applet.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.*;
 
-public class Asteroids extends JApplet implements Runnable, KeyListener
-{
+public class Asteroids extends JApplet implements Runnable, KeyListener {
+
     //used for debugging.  acts as a permanent (invisible) shield. hands off cheater!
     public boolean godmode = false;
 
     //sound stuff
     boolean sound = true;
 
-    AudioClip brake;
-    AudioClip cash;
-    AudioClip laser;
-    AudioClip warp;
-    AudioClip boom;
-    AudioClip thrust;
-    AudioClip ufolaser;
+    GameSoundPool brake;
+    GameSoundPool cash;
+    GameSoundPool laser;
+    GameSoundPool warp;
+    GameSoundPool boom;
+    GameSoundPool ufolaser;
+
+    Clip thrust;
 
     //the width and height of the rectangle upon which the game is rendered.  Should be the same as applet width and height
     public static final int BOARD_WIDTH = 800;
@@ -58,8 +67,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
     //flags for whether or not keys are pressed
     private boolean up = false, down = false, left = false, right = false, space = false;
 
-	public static void main(String[] args)
-	{
+    public static void main(String[] args) {
         JFrame frame = new JFrame("Chris Pugh's Asteroids");
         Asteroids applet = new Asteroids();
         frame.add(applet);
@@ -72,8 +80,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
         });
         frame.setVisible(true);
 
-		//frame.addKeyListener(applet);
-
+        //frame.addKeyListener(applet);
         applet.init();
         applet.start();
     }
@@ -82,8 +89,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
     //---------------------Asteroids Game Helper Functions------------------------------
     //----------------------------------------------------------------------------------
     //creates and starts the game update thread
-    public void startGame()
-	{
+    public void startGame() {
         t = new Thread(this);
         t.start();
     }
@@ -447,7 +453,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
 
                         if (UFO.UfoBullets.size() > tmp) {
                             if (ufolaser != null && sound) {
-                                ufolaser.play();
+                                ufolaser.start();
                             }
                         }
                         //and apply the new movement vector
@@ -484,7 +490,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                 if (bull != null) {
 
                                     if (sound && laser != null) {
-                                        laser.play();
+                                        laser.start();
                                     }
 
                                     bullets.add(bull);
@@ -629,7 +635,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                     ast.dead = true;
 
                                     if (sound && boom != null) {
-                                        boom.play();
+                                        boom.start();
                                     }
 
                                     spawnChildren(ast, x);
@@ -662,7 +668,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                     u.dead = true;
 
                                     if (sound && boom != null) {
-                                        boom.play();
+                                        boom.start();
                                     }
 
                                     loot.add(new Loot(u, new Material(Material.ALIEN_TECH)));
@@ -692,7 +698,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                     //asteroidFlag.add(i);
 
                                     if (sound && boom != null) {
-                                        boom.play();
+                                        boom.start();
                                     }
 
                                     x.dead = true;
@@ -727,7 +733,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                             playerShip.die();
 
                                             if (sound && boom != null) {
-                                                boom.play();
+                                                boom.start();
                                             }
 
                                             timeDied = System.currentTimeMillis();
@@ -743,7 +749,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                     } else {//player shield can kill a ufo
 
                                         if (sound && boom != null) {
-                                            boom.play();
+                                            boom.start();
                                         }
 
                                         o.dead = true;
@@ -771,7 +777,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                     if (!godmode && !playerShip.shielded) {
                                         if (!playerShip.hasUpgrade(Ship.ARMOR)) {
                                             if (sound && boom != null) {
-                                                boom.play();
+                                                boom.start();
                                             }
 
                                             b.dead = true;
@@ -801,7 +807,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                     spawnChildren(o, playerShip);
 
                                     if (sound && boom != null) {
-                                        boom.play();
+                                        boom.start();
                                     }
 
                                     o.dead = true; //even if we're shielded break the rock
@@ -841,7 +847,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                 if (u.intersects(o)) {
 
                                     if (sound && boom != null) {
-                                        boom.play();
+                                        boom.start();
                                     }
 
                                     o.dead = true;
@@ -871,7 +877,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                 if (playerShip.intersects(l)) {
 
                                     if (sound && cash != null) {
-                                        cash.play();
+                                        cash.start();
                                     }
 
                                     l.dead = true;
@@ -889,7 +895,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                                     l.dead = true;
 
                                     if (sound && cash != null) {
-                                        cash.play();
+                                        cash.start();
                                     }
                                 }
                             }
@@ -1006,7 +1012,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                 thrust.stop();
             }
             if (sound && up) {
-                thrust.loop();
+                thrust.loop(Clip.LOOP_CONTINUOUSLY);
             }
         }
 
@@ -1026,26 +1032,25 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
                 playerShip.removeUpgrade(Ship.WARP);
 
                 if (sound && warp != null) {
-                    warp.play();
+                    warp.start();
                 }
             }
 
             return;
         }
 
-        if (k.getKeyChar() == 's' || k.getKeyChar() == 'S')
-        {
+        if (k.getKeyChar() == 's' || k.getKeyChar() == 'S') {
             if (playerShip.shield > 0) {
                 playerShip.shielded = true;
             }
             return;
         }
 
-        if (k.getKeyCode() == KeyEvent.VK_UP)
-        {
-            if (!up && sound)
-            {
-                if (thrust != null){ thrust.loop(); }
+        if (k.getKeyCode() == KeyEvent.VK_UP) {
+            if (!up && sound) {
+                if (thrust != null) {
+                    thrust.loop(Clip.LOOP_CONTINUOUSLY);
+                }
             }
             up = true;
             return;
@@ -1053,13 +1058,11 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
 
         if (k.getKeyCode() == KeyEvent.VK_DOWN) {
 
-            if (!down)
-            {
+            if (!down) {
                 if (playerShip.getSpeed() > .5) {
 
-                    if (sound && brake != null)
-                    {
-                        brake.play();
+                    if (sound && brake != null) {
+                        brake.start();
                     }
                 }
             }
@@ -1068,14 +1071,12 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
             return;
         }
 
-        if (k.getKeyCode() == KeyEvent.VK_LEFT)
-        {
+        if (k.getKeyCode() == KeyEvent.VK_LEFT) {
             left = true;
             return;
         }
 
-        if (k.getKeyCode() == KeyEvent.VK_RIGHT)
-        {
+        if (k.getKeyCode() == KeyEvent.VK_RIGHT) {
             right = true;
             return;
         }
@@ -1102,7 +1103,7 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
 
         if (k.getKeyCode() == KeyEvent.VK_DOWN) {
             down = false;
-            brake.stop();
+            brake.stopAll();
             return;
         }
 
@@ -1130,26 +1131,39 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
     //------------------------------------------------------------------------
     //-------------------APPLET EVENT METHODS---------------------------------
     //------------------------------------------------------------------------
+    private Clip loadSound(String soundFileName) {
+        try {
+
+            URL soundURL = new File(soundFileName).toURI().toURL();
+
+            AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundURL);
+
+            Clip clip = AudioSystem.getClip();
+
+            clip.open(audioIn);
+            return clip;
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     //when the applet is created
     //set the font, create a backbuffer for drawing, and create a ship for the player to use
-    public void init()
-	{
-		addKeyListener(this); // Add this class as a KeyListener
+    public void init() {
+        addKeyListener(this); // Add this class as a KeyListener
         setFocusable(true); // Ensure the applet is focusable
 
-        try
-        {
-            brake = getAudioClip(new URL(getCodeBase(), "brake.au"));
-            laser = getAudioClip(new URL(getCodeBase(), "laser.au"));
-            cash = getAudioClip(new URL(getCodeBase(), "cashregister.au"));
-            warp = getAudioClip(new URL(getCodeBase(), "warp.au"));
-            boom = getAudioClip(new URL(getCodeBase(), "EXPLODE.au"));
-            thrust = getAudioClip(new URL(getCodeBase(), "thrust.au"));
-            ufolaser = getAudioClip(new URL(getCodeBase(), "ufolaser.au"));
-        }
-		catch (Exception e)
-		{
-            System.out.println("Error loading Sounds" + System.currentTimeMillis());
+        try {
+            brake = new GameSoundPool("brake.au");
+            laser = new GameSoundPool("laser.au");
+            cash = new GameSoundPool("cashregister.au");
+            warp = new GameSoundPool("warp.au");
+            boom = new GameSoundPool("EXPLODE.au");
+            thrust = loadSound("thrust.au");
+            ufolaser = new GameSoundPool("ufolaser.au");
+        } catch (Exception e) {
+            System.out.println("Error loading Sounds");
         }
 
         offScrnBfr = createImage(BOARD_WIDTH, BOARD_HEIGHT);
@@ -1163,16 +1177,14 @@ public class Asteroids extends JApplet implements Runnable, KeyListener
     }
 
     //begin running the program--add the main menu and start the game loop thread
-    public void start()
-	{
+    public void start() {
         menu = new Menu(BOARD_WIDTH, this, playerShip);
 
         menu.addMainMenu();
 
         //i like this sound, and it's a nice way to let the user know the game is loaded and ready to go
-        if (warp != null)
-		{
-            warp.play();
+        if (warp != null) {
+            warp.start();
         }
 
         startGame();
